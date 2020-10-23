@@ -104,5 +104,5 @@ class ImagenetConverter(Converter):
                         image_dirs[label] = osp.join(subset_dir,
                             ImagenetPath.IMAGES_DIR_NO_LABEL)
                         os.makedirs(image_dirs[label], exist_ok=True)
-                        self._save_image(item, osp.join(image_dirs[label],
-                            image_name + ImagenetPath.IMAGES_EXT))
+                    self._save_image(item, osp.join(image_dirs[label],
+                        image_name + ImagenetPath.IMAGES_EXT))
