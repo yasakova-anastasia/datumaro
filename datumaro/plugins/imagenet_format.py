@@ -29,7 +29,7 @@ class ImagenetExtractor(SourceExtractor):
     def _load_categories(self, path):
         label_cat = LabelCategories()
         for images_dir in os.listdir(path):
-	    print('extractor %s' % images_dir)
+            print('extractor %s' % images_dir)
             if images_dir != ImagenetPath.IMAGES_DIR_NO_LABEL:
                 label_cat.add(images_dir)
         return { AnnotationType.label: label_cat }
@@ -94,7 +94,7 @@ class ImagenetConverter(Converter):
                     if label not in image_dirs:
                         image_dirs[label] = osp.join(subset_dir, label_name)
                         os.makedirs(image_dirs[label], exist_ok=True)
-			print('make %s' % label_name)
+                        print('make %s' % label_name)
                     self._save_image(item, osp.join(image_dirs[label],
                         label_name + '_' + image_name + ImagenetPath.IMAGES_EXT))
 
