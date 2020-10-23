@@ -28,7 +28,7 @@ class ImagenetExtractor(SourceExtractor):
 
     def _load_categories(self, path):
         label_cat = LabelCategories()
-        for images_dir in os.listdir(path):
+        for images_dir in os.listdir(path).sort():
             print('extractor %s' % images_dir)
             if images_dir != ImagenetPath.IMAGES_DIR_NO_LABEL:
                 label_cat.add(images_dir)
