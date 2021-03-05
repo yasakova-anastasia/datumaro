@@ -1,5 +1,4 @@
-
-# Copyright (C) 2020 Intel Corporation
+# Copyright (C) 2020-2021 Intel Corporation
 #
 # SPDX-License-Identifier: MIT
 
@@ -10,8 +9,8 @@ import os.path as osp
 from collections import OrderedDict
 
 from datumaro.components.project import Project
-from datumaro.components.operations import (IntersectMerge,
-    QualityError, MergeError)
+from datumaro.components.operations import IntersectMerge
+from datumaro.components.errors import QualityError, MergeError
 
 from ..util import at_least, MultilineFormatter, CliException
 from ..util.project import generate_next_file_name, load_project

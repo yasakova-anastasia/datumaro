@@ -1,14 +1,14 @@
 from functools import partial
 import numpy as np
+import os
 import os.path as osp
 
 from unittest import TestCase, skipIf
 
-from datumaro.components.project import Dataset
+from datumaro.components.dataset import Dataset
 from datumaro.components.extractor import (DatasetItem,
     AnnotationType, Bbox, Mask, LabelCategories
 )
-from datumaro.components.project import Project
 from datumaro.util.image import Image, ByteImage, encode_image
 from datumaro.util.test_utils import (TestDir, compare_datasets,
     test_save_and_load)
@@ -154,6 +154,27 @@ class TfrecordConverterTest(TestCase):
                 partial(TfDetectionApiConverter.convert, save_images=True),
                 test_dir)
 
+    def test_inplace_save_writes_only_updated_data(self):
+        with TestDir() as path:
+            # generate initial dataset
+            dataset = Dataset.from_iterable([
+                DatasetItem(1, subset='a', image=np.ones((2, 3, 3))),
+                DatasetItem(2, subset='b', image=np.ones((2, 4, 3))),
+                DatasetItem(3, subset='c', image=np.ones((2, 5, 3))),
+            ])
+            dataset.export(path, 'tf_detection_api', save_images=True)
+            os.unlink(osp.join(path, 'a.tfrecord'))
+            os.unlink(osp.join(path, 'b.tfrecord'))
+            os.unlink(osp.join(path, 'c.tfrecord'))
+
+            dataset.put(DatasetItem(2, subset='a', image=np.ones((3, 2, 3))))
+            dataset.remove(3, 'c')
+            dataset.save(save_images=True)
+
+            self.assertTrue(osp.isfile(osp.join(path, 'a.tfrecord')))
+            self.assertFalse(osp.isfile(osp.join(path, 'b.tfrecord')))
+            self.assertTrue(osp.isfile(osp.join(path, 'c.tfrecord')))
+
     def test_labelmap_parsing(self):
         text = """
             {
@@ -218,7 +239,6 @@ class TfrecordImporterTest(TestCase):
                 'label_' + str(label) for label in range(10)),
         })
 
-        dataset = Project.import_from(DUMMY_DATASET_DIR, 'tf_detection_api') \
-            .make_dataset()
+        dataset = Dataset.import_from(DUMMY_DATASET_DIR, 'tf_detection_api')
 
         compare_datasets(self, target_dataset, dataset)

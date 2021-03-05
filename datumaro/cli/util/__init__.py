@@ -1,13 +1,15 @@
 
-# Copyright (C) 2019-2020 Intel Corporation
+# Copyright (C) 2019-2021 Intel Corporation
 #
 # SPDX-License-Identifier: MIT
 
 import argparse
 import textwrap
 
+from datumaro.components.errors import DatumaroError
 
-class CliException(Exception): pass
+
+class CliException(DatumaroError): pass
 
 def add_subparser(subparsers, name, builder):
     return builder(lambda **kwargs: subparsers.add_parser(name, **kwargs))

@@ -45,8 +45,8 @@ class TransformsTest(TestCase):
 
         expected = Dataset.from_iterable([
             DatasetItem(id=1, image=np.zeros((5, 10, 3)), annotations=[
-                Polygon([3.0, 2.5, 1.0, 0.0, 3.5, 0.0, 3.0, 2.5]),
-                Polygon([5.0, 3.5, 4.5, 0.0, 8.0, 0.0, 5.0, 3.5]),
+                Polygon([1, 0, 3, 2, 3, 0, 1, 0]),
+                Polygon([5, 0, 5, 3, 8, 0, 5, 0]),
             ]),
         ])
 
@@ -386,3 +386,29 @@ class TransformsTest(TestCase):
             mapping={}, default='delete')
 
         compare_datasets(self, target_dataset, actual)
+
+    def test_transform_labels(self):
+        src_dataset = Dataset.from_iterable([
+            DatasetItem(id=1, annotations=[
+                Label(1),
+                Bbox(1, 2, 3, 4, label=2),
+                Bbox(1, 3, 3, 3),
+                Mask(image=np.array([1]), label=3),
+                Polygon([1, 1, 2, 2, 3, 4], label=4),
+                PolyLine([1, 3, 4, 2, 5, 6], label=5)
+            ])
+        ], categories=['label%s' % i for i in range(6)])
+
+        dst_dataset = Dataset.from_iterable([
+            DatasetItem(id=1, annotations=[
+                Label(1),
+                Label(2),
+                Label(3),
+                Label(4),
+                Label(5)
+            ]),
+        ], categories=['label%s' % i for i in range(6)])
+
+        actual = transforms.AnnsToLabels(src_dataset)
+
+        compare_datasets(self, dst_dataset, actual)

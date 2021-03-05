@@ -1,5 +1,4 @@
-
-# Copyright (C) 2019-2020 Intel Corporation
+# Copyright (C) 2019-2021 Intel Corporation
 #
 # SPDX-License-Identifier: MIT
 
@@ -19,11 +18,12 @@ from datumaro.components.operations import (DistanceComparator,
 from datumaro.components.project import \
     PROJECT_DEFAULT_CONFIG as DEFAULT_CONFIG
 from datumaro.components.project import Environment, Project
+from datumaro.util import error_rollback
 
 from ...util import (CliException, MultilineFormatter, add_subparser,
     make_file_name)
 from ...util.project import generate_next_file_name, load_project
-from .diff import DiffVisualizer
+from .diff import DatasetDiffVisualizer
 
 
 def build_create_parser(parser_ctor=argparse.ArgumentParser):
@@ -87,7 +87,7 @@ def create_command(args):
 def build_import_parser(parser_ctor=argparse.ArgumentParser):
     builtins = sorted(Environment().importers.items)
 
-    parser = parser_ctor(help="Create project from existing dataset",
+    parser = parser_ctor(help="Create project from an existing dataset",
         description="""
             Creates a project from an existing dataset. The source can be:|n
             - a dataset in a supported format (check 'formats' section below)|n
@@ -172,50 +172,43 @@ def import_command(args):
     log.info("Importing project from '%s'" % args.source)
 
     extra_args = {}
+    fmt = args.format
     if not args.format:
         if args.extra_args:
             raise CliException("Extra args can not be used without format")
 
         log.info("Trying to detect dataset format...")
 
-        matches = []
-        for format_name in env.importers.items:
-            log.debug("Checking '%s' format...", format_name)
-            importer = env.make_importer(format_name)
-            try:
-                match = importer.detect(args.source)
-                if match:
-                    log.debug("format matched")
-                    matches.append((format_name, importer))
-            except NotImplementedError:
-                log.debug("Format '%s' does not support auto detection.",
-                    format_name)
-
+        matches = env.detect_dataset(args.source)
         if len(matches) == 0:
-            log.error("Failed to detect dataset format automatically. "
+            log.error("Failed to detect dataset format. "
                 "Try to specify format with '-f/--format' parameter.")
             return 1
         elif len(matches) != 1:
             log.error("Multiple formats match the dataset: %s. "
                 "Try to specify format with '-f/--format' parameter.",
-                ', '.join(m[0] for m in matches))
-            return 2
+                ', '.join(matches))
+            return 1
 
-        format_name, importer = matches[0]
-        args.format = format_name
-    else:
-        try:
-            importer = env.make_importer(args.format)
-            if hasattr(importer, 'from_cmdline'):
-                extra_args = importer.from_cmdline(args.extra_args)
-        except KeyError:
-            raise CliException("Importer for format '%s' is not found" % \
-                args.format)
+        fmt = matches[0]
+    elif args.extra_args:
+        if fmt in env.importers:
+            arg_parser = env.importers[fmt]
+        elif fmt in env.extractors:
+            arg_parser = env.extractors[fmt]
+        else:
+            raise CliException("Unknown format '%s'. A format can be added"
+                "by providing an Extractor and Importer plugins" % fmt)
 
-    log.info("Importing project as '%s'" % args.format)
+        if hasattr(arg_parser, 'parse_cmdline'):
+            extra_args = arg_parser.parse_cmdline(args.extra_args)
+        else:
+            raise CliException("Format '%s' does not accept "
+                "extra parameters" % fmt)
 
-    source = osp.abspath(args.source)
-    project = importer(source, **extra_args)
+    log.info("Importing project as '%s'" % fmt)
+
+    project = Project.import_from(osp.abspath(args.source), fmt, **extra_args)
     project.config.project_name = project_name
     project.config.project_dir = project_dir
 
@@ -337,14 +330,11 @@ def export_command(args):
     dst_dir = osp.abspath(dst_dir)
 
     try:
-        converter = project.env.converters.get(args.format)
+        converter = project.env.converters[args.format]
     except KeyError:
         raise CliException("Converter for format '%s' is not found" % \
             args.format)
-
-    extra_args = converter.from_cmdline(args.extra_args)
-    def converter_proxy(extractor, save_dir):
-        return converter.convert(extractor, save_dir, **extra_args)
+    extra_args = converter.parse_cmdline(args.extra_args)
 
     filter_args = FilterModes.make_filter_args(args.filter_mode)
 
@@ -352,13 +342,12 @@ def export_command(args):
     dataset = project.make_dataset()
 
     log.info("Exporting the project...")
-    dataset.export_project(
-        save_dir=dst_dir,
-        converter=converter_proxy,
-        filter_expr=args.filter,
-        **filter_args)
-    log.info("Project exported to '%s' as '%s'" % \
-        (dst_dir, args.format))
+
+    if args.filter:
+        dataset = dataset.filter(args.filter, **filter_args)
+    dataset.export(format=args.format, save_dir=dst_dir, **extra_args)
+
+    log.info("Project exported to '%s' as '%s'" % (dst_dir, args.format))
 
     return 0
 
@@ -518,8 +507,8 @@ def build_diff_parser(parser_ctor=argparse.ArgumentParser):
     parser.add_argument('-o', '--output-dir', dest='dst_dir', default=None,
         help="Directory to save comparison results (default: do not save)")
     parser.add_argument('-v', '--visualizer',
-        default=DiffVisualizer.DEFAULT_FORMAT,
-        choices=[f.name for f in DiffVisualizer.Format],
+        default=DatasetDiffVisualizer.DEFAULT_FORMAT.name,
+        choices=[f.name for f in DatasetDiffVisualizer.OutputFormat],
         help="Output format (default: %(default)s)")
     parser.add_argument('--iou-thresh', default=0.5, type=float,
         help="IoU match threshold for detections (default: %(default)s)")
@@ -533,6 +522,7 @@ def build_diff_parser(parser_ctor=argparse.ArgumentParser):
 
     return parser
 
+@error_rollback('on_error', implicit=True)
 def diff_command(args):
     first_project = load_project(args.project_dir)
     second_project = load_project(args.other_project_dir)
@@ -552,17 +542,14 @@ def diff_command(args):
     dst_dir = osp.abspath(dst_dir)
     log.info("Saving diff to '%s'" % dst_dir)
 
-    dst_dir_existed = osp.exists(dst_dir)
-    try:
-        visualizer = DiffVisualizer(save_dir=dst_dir, comparator=comparator,
-            output_format=args.visualizer)
-        visualizer.save_dataset_diff(
+    if not osp.exists(dst_dir):
+        on_error.do(shutil.rmtree, dst_dir, ignore_errors=True)
+
+    with DatasetDiffVisualizer(save_dir=dst_dir, comparator=comparator,
+            output_format=args.visualizer) as visualizer:
+        visualizer.save(
             first_project.make_dataset(),
             second_project.make_dataset())
-    except BaseException:
-        if not dst_dir_existed and osp.isdir(dst_dir):
-            shutil.rmtree(dst_dir, ignore_errors=True)
-        raise
 
     return 0
 
@@ -681,13 +668,13 @@ def transform_command(args):
     dst_dir = osp.abspath(dst_dir)
 
     try:
-        transform = project.env.transforms.get(args.transform)
+        transform = project.env.transforms[args.transform]
     except KeyError:
         raise CliException("Transform '%s' is not found" % args.transform)
 
     extra_args = {}
-    if hasattr(transform, 'from_cmdline'):
-        extra_args = transform.from_cmdline(args.extra_args)
+    if hasattr(transform, 'parse_cmdline'):
+        extra_args = transform.parse_cmdline(args.extra_args)
 
     log.info("Loading the project...")
     dataset = project.make_dataset()

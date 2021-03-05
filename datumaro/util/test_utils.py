@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from datumaro.components.extractor import AnnotationType
-from datumaro.components.project import Project
+from datumaro.components.dataset import Dataset
 from datumaro.util import find
 
 
@@ -92,7 +92,7 @@ def compare_datasets(test, expected, actual, ignored_attrs=None,
             x.subset == item_a.subset)
         test.assertFalse(item_b is None, item_a.id)
         test.assertEqual(item_a.attributes, item_b.attributes)
-        if require_images or \
+        if (require_images and item_a.has_image and item_a.image.has_data) or \
                 item_a.has_image and item_a.image.has_data and \
                 item_b.has_image and item_b.image.has_data:
             test.assertEqual(item_a.image, item_b.image, item_a.id)
@@ -132,8 +132,7 @@ def test_save_and_load(test, source_dataset, converter, test_dir, importer,
 
     if importer_args is None:
         importer_args = {}
-    parsed_dataset = Project.import_from(test_dir, importer, **importer_args) \
-        .make_dataset()
+    parsed_dataset = Dataset.import_from(test_dir, importer, **importer_args)
 
     if target_dataset is None:
         target_dataset = source_dataset

@@ -20,10 +20,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 
 ### Fixed
+-
+
+### Security
+-
+
+## 03/02/2021 - Release v0.1.6.1 (hotfix)
+### Added
+-
+
+### Changed
+-
+
+### Deprecated
+-
+
+### Removed
+-
+
+### Fixed
+- Images with no annotations are exported again in VOC formats (<https://github.com/openvinotoolkit/datumaro/pull/123>)
+- Inference result for only one output layer in OpenVINO launcher (<https://github.com/openvinotoolkit/datumaro/pull/125>)
+
+### Security
+-
+
+## 02/26/2021 - Release v0.1.6
+### Added
+- `Icdar13/15` dataset format (<https://github.com/openvinotoolkit/datumaro/pull/96>)
+- Laziness, source caching, tracking of changes and partial updating for `Dataset` (<https://github.com/openvinotoolkit/datumaro/pull/102>)
+- `Market-1501` dataset format (<https://github.com/openvinotoolkit/datumaro/pull/108>)
+- `LFW` dataset format (<https://github.com/openvinotoolkit/datumaro/pull/110>)
+- Support of polygons' and masks' confusion matrices and mismathing classes in `diff` command (<https://github.com/openvinotoolkit/datumaro/pull/117>)
+- Add near duplicate image removal plugin (<https://github.com/openvinotoolkit/datumaro/pull/113>)
+- Sampler Plugin that analyzes inference result from the given dataset and selects samples for annotation(<https://github.com/openvinotoolkit/datumaro/pull/115>)
+
+### Changed
+- OpenVINO model launcher is updated for OpenVINO r2021.1 (<https://github.com/openvinotoolkit/datumaro/pull/100>)
+
+### Deprecated
+-
+
+### Removed
+-
+
+### Fixed
+- High memory consumption and low performance of mask import/export, #53 (<https://github.com/openvinotoolkit/datumaro/pull/101>)
+- Masks, covered by class 0 (background), should be exported with holes inside (<https://github.com/openvinotoolkit/datumaro/pull/104>)
+- `diff` command invocation problem with missing class methods (<https://github.com/openvinotoolkit/datumaro/pull/117>)
+
+### Security
+-
+
+## 01/23/2021 - Release v0.1.5
+### Added
+- `WiderFace` dataset format (<https://github.com/openvinotoolkit/datumaro/pull/65>, <https://github.com/openvinotoolkit/datumaro/pull/90>)
+- Function to transform annotations to labels (<https://github.com/openvinotoolkit/datumaro/pull/66>)
+- Dataset splits for classification, detection and re-id tasks (<https://github.com/openvinotoolkit/datumaro/pull/68>, <https://github.com/openvinotoolkit/datumaro/pull/81>)
+- `VGGFace2` dataset format (<https://github.com/openvinotoolkit/datumaro/pull/69>, <https://github.com/openvinotoolkit/datumaro/pull/82>)
+- Unique image count statistic (<https://github.com/openvinotoolkit/datumaro/pull/87>)
+- Installation with pip by name `datumaro`
+
+### Changed
+- `Dataset` class extended with new operations: `save`, `load`, `export`, `import_from`, `detect`, `run_model` (<https://github.com/openvinotoolkit/datumaro/pull/71>)
+- Allowed importing `Extractor`-only defined formats (in `Project.import_from`, `dataset.import_from` and CLI/`project import`) (<https://github.com/openvinotoolkit/datumaro/pull/71>)
+- `datum project ...` commands replaced with `datum ...` commands (<https://github.com/openvinotoolkit/datumaro/pull/84>)
+- Supported more image formats in `ImageNet` extractors (<https://github.com/openvinotoolkit/datumaro/pull/85>)
+- Allowed adding `Importer`-defined formats as project sources (`source add`) (<https://github.com/openvinotoolkit/datumaro/pull/86>)
+- Added max search depth in `ImageDir` format and importers (<https://github.com/openvinotoolkit/datumaro/pull/86>)
+
+### Deprecated
+- `datum project ...` CLI context (<https://github.com/openvinotoolkit/datumaro/pull/84>)
+
+### Removed
+-
+
+### Fixed
+- Allow plugins inherited from `Extractor` (instead of only `SourceExtractor`) (<https://github.com/openvinotoolkit/datumaro/pull/70>)
+- Windows installation with `pip` for `pycocotools` (<https://github.com/openvinotoolkit/datumaro/pull/73>)
+- `YOLO` extractor path matching on Windows (<https://github.com/openvinotoolkit/datumaro/pull/73>)
+- Fixed inplace file copying when saving images (<https://github.com/openvinotoolkit/datumaro/pull/76>)
+- Fixed `labelmap` parameter type checking in `VOC` converter (<https://github.com/openvinotoolkit/datumaro/pull/76>)
+- Fixed model copying on addition in CLI (<https://github.com/openvinotoolkit/datumaro/pull/94>)
+
+### Security
+-
+
+## 12/10/2020 - Release v0.1.4
+### Added
+- `CamVid` dataset format (<https://github.com/openvinotoolkit/datumaro/pull/57>)
+- Ability to install `opencv-python-headless` dependency with `DATUMARO_HEADLESS=1`
+  enviroment variable instead of `opencv-python` (<https://github.com/openvinotoolkit/datumaro/pull/62>)
+
+### Changed
+- Allow empty supercategory in COCO (<https://github.com/openvinotoolkit/datumaro/pull/54>)
+- Allow Pascal VOC to search in subdirectories (<https://github.com/openvinotoolkit/datumaro/pull/50>)
+
+### Deprecated
+-
+
+### Removed
+-
+
+### Fixed
+-
+
+### Security
+-
+
+## 10/28/2020 - Release v0.1.3
+### Added
+- `ImageNet` and `ImageNetTxt` dataset formats (<https://github.com/openvinotoolkit/datumaro/pull/41>)
+
+### Changed
+-
+
+### Deprecated
+-
+
+### Removed
+-
+
+### Fixed
 - Default `label-map` parameter value for VOC converter (<https://github.com/openvinotoolkit/datumaro/pull/34>)
 - Randomness of random split transform (<https://github.com/openvinotoolkit/datumaro/pull/38>)
 - `Transform.subsets()` method (<https://github.com/openvinotoolkit/datumaro/pull/38>)
 - Supported unknown image formats in TF Detection API converter (<https://github.com/openvinotoolkit/datumaro/pull/40>)
+- Supported empty attribute values in CVAT extractor (<https://github.com/openvinotoolkit/datumaro/pull/45>)
 
 ### Security
 -
