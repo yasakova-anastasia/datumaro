@@ -157,6 +157,15 @@ class CamvidExtractor(SourceExtractor):
         with open(path, encoding='utf-8') as f:
             for line in f:
                 objects = line.split()
+                if 2 < len(objects):
+                    if len(objects) % 2:
+                        raise Exception("Line %s: image and gt must have the "
+                            "same name" % line)
+                    else:
+                        mid = int(len(objects) / 2)
+                        objects[0] = ' '.join(objects[i] for i in range(mid))
+                        objects[1] = ' '.join(objects[i] for i in range(mid, 2 * mid))
+                        objects = objects[:2]
                 image = objects[0]
                 item_id = ('/'.join(image.split('/')[2:]))[:-len(CamvidPath.IMAGE_EXT)]
                 image_path = osp.join(self._dataset_dir,
